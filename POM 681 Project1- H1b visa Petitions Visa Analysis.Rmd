@@ -1,0 +1,168 @@
+---
+title: "H1b Case study"
+output: word_document
+---
+Reading the dataset
+```{r}
+old.par <- par(mar = c(0, 0, 0, 0))
+h1b<- read.csv("h1b_kaggle.csv", header = TRUE)
+head(h1b)
+str(h1b)
+```
+Data preprocessing:
+```{r}
+h1b$WORKSITE <- as.character(h1b$WORKSITE)
+elems <- unlist( strsplit( h1b$WORKSITE , "," ) )
+m <- as.data.frame( matrix( elems , ncol = 2 , byrow = TRUE ) )
+m <- setNames(m, c("City","State"))
+h1b <- cbind(m,  h1b)
+head(h1b)
+```
+Comments:
+In this part we had processed the data and removed all the unwanted attributes
+
+
+Creating visualizations:
+
+1.	What are the top states with maximum number of H1B –Visa applicants?
+From Pie Chart, Barchart1.pdf and gVisMap
+a.	California 
+b.	Texas 
+c.	New york 
+d.	New Jersey 
+e.	Illinois 
+f.	Massachusetts 
+
+```{r}
+tab = table(h1b$State)
+tab = sort(tab)
+tab1 = tab[tab>100000]
+tab1
+pie(tab1, cex=0.4)
+```
+Pie chart showing  Applicants -Frequency State-wise H1B –Visa Applicants. 
+In Descending Order
+1.	California
+2.	Texas
+3.	New york
+4.	New Jersey
+5.	Illinois
+6.	Massachusetts
+
+```{r}
+ library(googleVis)
+h1bgrp_data <- aggregate(h1b, by=list(h1b$State), FUN=length);
+colnames(h1bgrp_data)[which(colnames(h1bgrp_data) == 'Group.1')] <- 'StateName'
+head(h1bgrp_data)
+h1bgrp_data <- h1bgrp_data[,c("StateName","State")]
+
+p = gvisGeoChart(h1bgrp_data, "StateName", "State",
+                 options=list(region="US", 
+                              displayMode="regions", 
+                              resolution="provinces", displayMode="text",
+                              width=600, height=400))
+t <- gvisTable(h1bgrp_data, 
+               options=list(width=200, height=300))
+pt <- gvisMerge(p,t, horizontal=TRUE) 
+
+plot(pt)
+#http://127.0.0.1:13352/custom/googleVis/MergedID23843c95a93.html
+
+```
+California being the hub of industries, it is obvious to be on the top of the list. Texas being the next home for IT, takes the next place. Then come New York, New Jersey, Chicago & Boston on the list.
+
+
+2. What are top six jobs in demand? 
+
+```{r}
+levels(h1b$SOC_NAME) <- tolower(levels(h1b$SOC_NAME))   #lowercase
+library('tidyr')
+s_h1b <- separate(data = h1b, col = SOC_NAME, into = c("xSOC_NAME","ySOC_NAME"), sep = ",")
+str(s_h1b)
+head(s_h1b)
+
+tab3 = table(s_h1b$xSOC_NAME)
+tab3 = sort(tab3, decreasing = TRUE)
+tab3 = tab3[tab3>20000]
+tab3
+barplot(tab3,main="H1B Visa - Occupational Name",ylab="Freqency",las=2, 
+        col = rainbow(30), 
+        cex.names =.5)
+
+```
+Bar chart2.pdf – SOC_ Name on X axis and Frequency on Y-Axis – SOC _Name –wise frequency in ascending and descending order can be seen 
+
+```{r}
+tab4 = table(h1b$JOB_TITLE)
+tab4 = sort(tab4, decreasing = TRUE)
+tab4 = tab4[tab4>10000]
+tab4
+#barplot(tab4, col = rainbow(30), cex.names = 0.6)
+par(mgp=c(3,0,0)) 
+#axis(side = 1,tick = FALSE)
+barplot(tab4,main="H1B Visa- Job Title",ylab="Freqency",las=2, 
+        col = rainbow(30), 
+        cex.names =.4)
+```
+Bar chart3.pdf – H1B Visa Job Title on X axis and Frequency  on Y axis  The applicants for H1B Visa can be known job title-wise. W.r.t. job title the H1B-visa frequency can be known in Ascending/Descending order can be known through visualization
+
+From Barcahart2 and Barchart3
+a.	Programmer Analyst
+b.	Software Engineer
+c.	Computer Programmer
+d.	Systems Analyst
+e.	Software Developer
+f.	Business Analyst
+Comparing Barchart 2 & Barchart 3, we can observe that Computer Systems Analysts, Software Developers & Computer Programmers which are on the top of the list consist of Programmer Analyst (highest number). Likewise, Software Engineer & Software Developers are also categorized under number of SOC_NAME. The analysis would be better if similar jobs are brought under one category.
+
+
+
+3.	What are the companies sponsoring maximum number of H1B Visa Applications?
+```{r}
+tab5 = table(h1b$EMPLOYER_NAME)
+tab5 = sort(tab5, decreasing = TRUE)
+tab5 = tab5[tab5>10000]
+tab5
+par(mgp=c(3,0,0)) 
+par(mar=c(7, 4, 4, 2) + 1)
+#axis(side = 1,tick = FALSE)
+barplot(tab5,main="H1B Employer Name",ylab="Freqency",las=2, 
+        col = rainbow(30),
+        cex.names =.5)
+```
+Bar chart4.pdf – The H1B Visa applicant’s employer on X-axis and Frequency on Y axis.  This gives company-wise H1B Vis Applicants. If clustered Country-wise it would give the ranking of country in applying for Vis applications.
+
+From Barchart4.pdf
+a.	Infosys Ltd
+b.	Tata Consultancy Services Ltd
+c.	Wipro Ltd
+d.	Deloitte Consulting Ltd
+e.	IBM India Pvt. Ltd
+f.	Accenture Ltd
+
+Comparing Barchart 4 with Barchart 2, it can be observed that most of the jobs these Companies apply for, are the Computer System Analysts, Software Developers & Computer Programmers. 
+
+4. What can be commented on the demand for software jobs?
+```{r}
+zdfgrp <- aggregate(h1b, by=list(h1b$CASE_STATUS, h1b$YEAR), FUN=length);
+
+colnames(zdfgrp)[which(colnames(zdfgrp) == 'Group.1')] <- 'case_status'
+colnames(zdfgrp)[which(colnames(zdfgrp) == 'Group.2')] <- 'year'
+head(zdfgrp)
+str(zdfgrp)
+
+library("ggplot2")
+ggplot(data=zdfgrp, aes(y=CASE_STATUS, x=year,  group=year, colour=factor(case_status))) +
+  geom_point() +
+  theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5)) +
+  labs(
+    x = "Year",
+    y = "Frequency",
+    color = "Case Status"
+  ) +
+  ggtitle("H1B Visa - Case Status")
+```
+It can be understood from the chart that the more number of petitions are being filed each year and the approvals are also on an increasing rate implying that the demand for software jobs is raising every year. Also, it can be observed from the chart that the denial rate has gone down to a negligible number.
+
+Conclusion: Hence, it can be inferred from the above visualizations that there is a high demand for software jobs and a possible shortage of candidates in the US particularly for these jobs.
+
